@@ -2,9 +2,12 @@
 import sys
 import os
 
-tokens = ["#","$","``","\'\'",",","-LRB-","-RRB-",".",":","CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS","MD","NN","NNP","NNPS","NNS","PDT","POS","PRP","PRP$","RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP","VBZ","WDT","WP","WP$","WRB"]
-def toBin(pos):
-	return bin(tokens.index(pos))[2:].rjust(6,"0")
+POS = ["#","$","``","\'\'",",","-LRB-","-RRB-",".",":","CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS","MD","NN","NNP","NNPS","NNS","PDT","POS","PRP","PRP$","RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP","VBZ","WDT","WP","WP$","WRB"]
+qClass = ["ABBREVIATION","abb","exp","ENTITY","animal","body","color","creative","currency","dis","event","food","instrument","lang","letter","other","plant","product","religion","sport","substance","symbol","technique","term","vehicle","word","DESCRIPTION","definition","description","manner","reason","HUMAN","group","ind","title","description","LOCATION","city","country","mountain","other","state","NUMERIC","code","count","date","distance","money","order","other","period","percent","speed","temp","size","weight"]
+def toBin(pos=None, q=None):
+	if (q):
+		return bin(qClass.index(q))[2:].rjust(6,"0")
+	return bin(POS.index(pos))[2:].rjust(6,"0")
 
 def toHash(word):
 	result = 0
@@ -12,7 +15,7 @@ def toHash(word):
 		result += (index+1)*ord(letter)
 	return bin(result % 255)[2:].rjust(8,"0")
 
-def trainsentence(sentence):
+def trainSentence(sentence):
 	#sentence is of the form: ['answer=X',(HASH,POS),...]
 	print sentence
 
@@ -31,16 +34,16 @@ if __name__ == "__main__":
 	
 	pFile = open(qFile+".parsed")
 	
-	#prove the token list
-	#for index, item in enumerate(tokens):
+	#prove the POS token list
+	#for index, item in enumerate(POS):
 	#	print str(index)+". \""+item
 	for line in pFile:
 		sentence = []
 		for word in line.split(") (")[2:]:
 			word = word.split(" ")
 			if not(sentence):
-				sentence.append("anwser="+word[1])
+				sentence.append("anwser="+toBin(q=word[1]))
 			else:
 				sentence.append((toHash(word[1]),toBin(word[0])))
-		trainsentence(sentence)
+		trainSentence(sentence)
 	
