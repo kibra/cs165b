@@ -1,9 +1,18 @@
 #!/usr/bin/python
 import sys
 import os
+from pybrain.tools.shortcuts import buildNetwork
+from pybrain.datasets.classification import ClassificationDataSet, SequenceClassificationDataSet
+from pybrain.supervised.trainers import BackpropTrainer
+from pybrain.structure.connections import FullConnection
+from pybrain.structure.modules import TanhLayer, LSTMLayer, LinearLayer, SigmoidLayer
+from pybrain.structure import RecurrentNetwork
 
-POS = ["#","$","``","\'\'",",","-LRB-","-RRB-",".",":","CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS","MD","NN","NNP","NNPS","NNS","PDT","POS","PRP","PRP$","RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP","VBZ","WDT","WP","WP$","WRB"]
-qClass = ["ABBREVIATION","abb","exp","ENTITY","animal","body","color","creative","currency","dis","event","food","instrument","lang","letter","other","plant","product","religion","sport","substance","symbol","technique","term","vehicle","word","DESCRIPTION","definition","description","manner","reason","HUMAN","group","ind","title","description","LOCATION","city","country","mountain","other","state","NUMERIC","code","count","date","distance","money","order","other","period","percent","speed","temp","size","weight"]
+
+
+
+POS = ["#","$","``","\'\'",",","-LRB-","-RRB-",".",":","?","CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS","MD","NN","NNP","NNPS","NNS","PDT","POS","PRP","PRP$","RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP","VBZ","WDT","WP","WP$","WRB"]
+qClass = ["ABBREVIATION","abb","exp","ENTITY","animal","body","color","cremat","currency","dismed","event","food","instru","lang","letter","other","plant","product","religion","sport","substance","symbol","techmeth","termeq","veh","word","DESCRIPTION","definition","def","manner","reason","HUMAN","gr","ind","title","desc","LOCATION","city","country","mount","other","state","NUMERIC","code","count","date","dist","money","ord","other","period","perc","speed","temp","volsize","weight"]
 def toBin(pos=None, q=None):
 	if (q):
 		return bin(qClass.index(q))[2:].rjust(6,"0")
@@ -12,15 +21,50 @@ def toBin(pos=None, q=None):
 def toHash(word):
 	result = 0
 	for index, letter in enumerate(word):
-		result += (index+1)*ord(letter)
+		result += (index+1)*ord(letter)	
 	return bin(result % 255)[2:].rjust(8,"0")
 
 def trainSentence(sentence):
 	#sentence is of the form: ['answer=X',(HASH,POS),...]
-	print sentence
+	for wordhash_wordtype in sentence[1:]:
+		intuple = []
+		outtuple = []
+		for item in wordhash_wordtype[0]:
+			intuple.append(int(item))
+		for item in wordhash_wordtype[1]:
+			intuple.append(int(item))
+		for item in sentence[0]:
+			if int(item) < 1:
+				outtuple.append(-1)
+			else:
+				outtuple.append(int(item))
+		print intuple, outtuple
+		sds.appendLinked(intuple,outtuple)
+		#print '('+wordhash_wordtype[0] + wordhash_wordtype[1]+'),('+sentence[0]+')'
+	if len(sentence[1:]) > 0:
+		print 'reset'
+		sds.newSequence()
 
 #basically main
 if __name__ == "__main__":
+	#Initialize the ANN
+	rnet = RecurrentNetwork()
+
+	rnet.addInputModule(LinearLayer(8, name="word_hash"))
+	rnet.addInputModule(LinearLayer(6, name="word_type"))
+	rnet.addModule(LSTMLayer(6, name="hidden"))
+	rnet.addOutputModule(TanhLayer(6, name="out"))
+
+	rnet.addConnection(FullConnection(rnet["word_type"], rnet["hidden"]))
+	rnet.addRecurrentConnection(FullConnection(rnet["hidden"], rnet["hidden"]))
+	rnet.addConnection(FullConnection(rnet["hidden"], rnet["out"]))
+	rnet.addConnection(FullConnection(rnet["word_hash"], rnet["out"]))
+
+	rnet.sortModules()
+	
+	#Initialize the dataset
+	sds = SequenceClassificationDataSet(14,6)
+	
 	#The name of the file that contains the questions to classify.
 	try:
 		qFile = sys.argv[1]
@@ -42,8 +86,44 @@ if __name__ == "__main__":
 		for word in line.split(") (")[2:]:
 			word = word.split(" ")
 			if not(sentence):
-				sentence.append("anwser="+toBin(q=word[1]))
+				#print line
+				sentence.append(toBin(q=word[1]))
 			else:
 				sentence.append((toHash(word[1]),toBin(word[0])))
 		trainSentence(sentence)
+	print "dataset created"
 	
+	trainer = BackpropTrainer(rnet, sds, learningrate=0.05)
+	trainer.trainEpochs(1000)
+	
+	rnet.activate([0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1])
+	rnet.activate([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1])
+	rnet.activate([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0])
+	rnet.activate([1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0])
+	rnet.activate([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0])
+	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1])
+	rnet.activate([0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1])
+	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0])
+	rnet.activate([1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1])
+	rnet.activate([0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1])
+	rnet.activate([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0])
+	rnet.activate([0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0])
+	rnet.activate([0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0])
+	rnet.activate([0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1])
+	print rnet.activate([1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1])
+	rnet.reset()
+	print "Should out put: [1, -1, -1, -1, -1, 1]"
+	rnet.activate([0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1]) 
+	rnet.activate([0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1])
+	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0])
+	rnet.activate([0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1])
+	rnet.activate([0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0])
+	rnet.activate([1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0])
+	rnet.activate([1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0])
+	rnet.activate([0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0])
+	rnet.activate([1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1]) 
+	print rnet.activate([1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1])
+	rnet.reset()
+	print "Should out put: [-1, -1, 1, 1, 1, 1]"
+
