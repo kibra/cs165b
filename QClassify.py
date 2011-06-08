@@ -8,7 +8,7 @@ from pybrain.structure.connections import FullConnection
 from pybrain.structure.modules import TanhLayer, LSTMLayer, LinearLayer, SigmoidLayer
 from pybrain.structure import RecurrentNetwork
 
-
+epochs = 10
 
 
 POS = ["#","$","``","\'\'",",","-LRB-","-RRB-",".",":","?","CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS","MD","NN","NNP","NNPS","NNS","PDT","POS","PRP","PRP$","RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP","VBZ","WDT","WP","WP$","WRB"]
@@ -45,6 +45,26 @@ def trainSentence(sentence):
 		print 'reset'
 		sds.newSequence()
 
+def testSentence(sentence):
+	print "training----------"
+	for wordhash_wordtype in sentence[1:]:
+		intuple = []
+		outtuple = []
+		for item in wordhash_wordtype[0]:
+			intuple.append(int(item))
+		for item in wordhash_wordtype[1]:
+			intuple.append(int(item))
+		for item in sentence[0]:
+			if int(item) < 1:
+				outtuple.append(-1)
+			else:
+				outtuple.append(int(item))
+		print intuple, outtuple
+		result = rnet.activate(intuple)
+	if (result != sentence[0])
+		print "FAIL:",sentence
+		exit(0)
+
 #basically main
 if __name__ == "__main__":
 	#Initialize the ANN
@@ -78,9 +98,6 @@ if __name__ == "__main__":
 	
 	pFile = open(qFile+".parsed")
 	
-	#prove the POS token list
-	#for index, item in enumerate(POS):
-	#	print str(index)+". \""+item
 	for line in pFile:
 		sentence = []
 		for word in line.split(") (")[2:]:
@@ -94,36 +111,55 @@ if __name__ == "__main__":
 	print "dataset created"
 	
 	trainer = BackpropTrainer(rnet, sds, learningrate=0.05)
-	trainer.trainEpochs(1000)
+	trainer.trainEpochs(epochs)
 	
-	rnet.activate([0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1])
-	rnet.activate([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1])
-	rnet.activate([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0])
-	rnet.activate([1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0])
-	rnet.activate([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0])
-	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1])
-	rnet.activate([0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1])
-	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0])
-	rnet.activate([1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1])
-	rnet.activate([0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1])
-	rnet.activate([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0])
-	rnet.activate([0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0])
-	rnet.activate([0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0])
-	rnet.activate([0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0])
-	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1])
-	print rnet.activate([1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1])
-	rnet.reset()
-	print "Should out put: [1, -1, -1, -1, -1, 1]"
-	rnet.activate([0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1]) 
-	rnet.activate([0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1])
-	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0])
-	rnet.activate([0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1])
-	rnet.activate([0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0])
-	rnet.activate([1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0])
-	rnet.activate([1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0])
-	rnet.activate([0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0])
-	rnet.activate([1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1]) 
-	print rnet.activate([1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1])
-	rnet.reset()
-	print "Should out put: [-1, -1, 1, 1, 1, 1]"
+	#test
+	if (argv[2]):
+		#f = open(argv[2])
+		exit(0)
+	else
+		#test with training data
+		pFile = open(argv[1]+".parsed")
+	
+	for line in pFile:
+		sentence = []
+		for word in line.split(") (")[2:]:
+			word = word.split(" ")
+			if not(sentence):
+				#print line
+				sentence.append(toBin(q=word[1]))
+			else:
+				sentence.append((toHash(word[1]),toBin(word[0])))
+		testSentence(sentence)
+	
+#	rnet.activate([0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1])
+#	rnet.activate([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1])
+#	rnet.activate([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0])
+#	rnet.activate([1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0])
+#	rnet.activate([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0])
+#	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1])
+#	rnet.activate([0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1])
+#	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0])
+#	rnet.activate([1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1])
+#	rnet.activate([0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1])
+#	rnet.activate([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0])
+#	rnet.activate([0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0])
+#	rnet.activate([0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0])
+#	rnet.activate([0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+#	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1])
+#	print rnet.activate([1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1])
+#	rnet.reset()
+#	print "Should out put: [1, -1, -1, -1, -1, 1]"
+#	rnet.activate([0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1]) 
+#	rnet.activate([0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1])
+#	rnet.activate([0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0])
+#	rnet.activate([0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1])
+#	rnet.activate([0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0])
+#	rnet.activate([1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0])
+#	rnet.activate([1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0])
+#	rnet.activate([0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0])
+#	rnet.activate([1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1]) 
+#	print rnet.activate([1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1])
+#	rnet.reset()
+#	print "Should out put: [-1, -1, 1, 1, 1, 1]"
 
